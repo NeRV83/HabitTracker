@@ -9,7 +9,7 @@ data class Habit(
     val frequency: Frequency,
     val priority: Priority,
     val createdAt: Long = System.currentTimeMillis(),
-    val completions: Map<String, Boolean> = emptyMap() // ключ - дата "yyyy-MM-dd", значение - выполнено/нет
+    val completions: Map<String, Boolean> = emptyMap()
 )
 
 enum class Frequency {
