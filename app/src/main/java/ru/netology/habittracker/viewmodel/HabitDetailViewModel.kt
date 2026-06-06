@@ -15,7 +15,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 class HabitDetailViewModel(
-    private val savedStateHandle: SavedStateHandle
+    private val habitId: String
 ) : ViewModel() {
     private val repository = App.repository
 
@@ -32,7 +32,6 @@ class HabitDetailViewModel(
     private fun loadHabit() {
         viewModelScope.launch {
             _isLoading.value = true
-            val habitId = savedStateHandle["habitId"] ?: return@launch
             _habit.value = repository.getHabitById(habitId)
             _isLoading.value = false
         }

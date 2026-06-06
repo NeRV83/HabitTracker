@@ -1,7 +1,6 @@
 package ru.netology.habittracker.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -15,14 +14,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import ru.netology.habittracker.data.Priority
 import ru.netology.habittracker.viewmodel.HabitDetailViewModel
+import ru.netology.habittracker.viewmodel.HabitDetailViewModelFactory
 
 @Composable
 fun HabitDetailScreen(
     navController: NavController,
     habitId: String,
-    onEdit: () -> Unit,
-    viewModel: HabitDetailViewModel = viewModel()
+    onEdit: () -> Unit
 ) {
+    val viewModel: HabitDetailViewModel = viewModel(
+        key = habitId,
+        factory = HabitDetailViewModelFactory(habitId)
+    )
+
     val habit by viewModel.habit.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
