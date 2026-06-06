@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Habit Tracker</string>
+    <string name="title">Название</string>
+    <string name="description">Описание</string>
+    <string name="frequency">Частота</string>
+    <string name="priority">Приоритет</string>
+    <string name="daily">Ежедневно</string>
+    <string name="weekly">Еженедельно</string>
+    <string name="low">Низкий</string>
+    <string name="medium">Средний</string>
+    <string name="high">Высокий</string>
+    <string name="add_habit">Добавить привычку</string>
+    <string name="edit_habit">Редактировать привычку</string>
+    <string name="no_habits">Нет привычек</string>
+    <string name="add_first_habit">Добавьте свою первую привычку</string>
+</resources>
