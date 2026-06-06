@@ -118,5 +118,8 @@ dependencies {
     implementation(libs.com.google.android.material)
     implementation(libs.androidx.constraintlayout)
 
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
