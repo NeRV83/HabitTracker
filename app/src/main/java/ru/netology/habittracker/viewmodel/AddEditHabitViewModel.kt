@@ -89,11 +89,15 @@ class AddEditHabitViewModel(
                 title = _title.value,
                 description = _description.value,
                 frequency = _frequency.value,
-                priority = _priority.value
+                priority = _priority.value,
+                completions = emptyMap() // добавляем пустую карту завершений
             )
 
             if (_isEditMode.value) {
-                repository.updateHabit(habit)
+                // При редактировании сохраняем существующие completions
+                val existingHabit = repository.getHabitById(habit.id)
+                val updatedHabit = habit.copy(completions = existingHabit?.completions ?: emptyMap())
+                repository.updateHabit(updatedHabit)
             } else {
                 repository.addHabit(habit)
             }

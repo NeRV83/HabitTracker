@@ -41,4 +41,41 @@ class InMemoryHabitRepository : HabitRepository {
             }
         }
     }
+
+    override suspend fun toggleCompletion(habitId: String, date: String, completed: Boolean) {
+        _habits.update { currentMap ->
+            val habit = currentMap[habitId] ?: return@update currentMap
+            val newCompletions = habit.completions.toMutableMap().apply {
+                put(date, completed)
+            }
+            val updatedHabit = habit.copy(completions = newCompletions)
+            currentMap.toMutableMap().apply {
+                put(habitId, updatedHabit)
+            }
+        }
+    }
+
+    override suspend fun getCompletionStatus(habitId: String, date: String): Boolean {
+        return _habits.value[habitId]?.completions?.get(date) ?: false
+    }
+
+    override suspend fun getWeeklyProgress(habitId: String): Map<String, Boolean> {
+        val habit = _habits.value[habitId] ?: return emptyMap()
+        val calendar = java.util.Calendar.getInstance()
+        val currentDate = java.util.Calendar.getInstance()
+
+        val weekDays = mutableMapOf<String, Boolean>()
+
+        // Получаем начало недели (понедельник)
+        calendar.set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY)
+
+        for (i in 0..6) {
+            val date = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                .format(calendar.time)
+            weekDays[date] = habit.completions[date] ?: false
+            calendar.add(java.util.Calendar.DAY_OF_MONTH, 1)
+        }
+
+        return weekDays
+    }
 }

@@ -8,4 +8,7 @@ interface HabitRepository {
     suspend fun addHabit(habit: Habit)
     suspend fun updateHabit(habit: Habit)
     suspend fun deleteHabit(id: String)
+    suspend fun toggleCompletion(habitId: String, date: String, completed: Boolean)
+    suspend fun getCompletionStatus(habitId: String, date: String): Boolean
+    suspend fun getWeeklyProgress(habitId: String): Map<String, Boolean>
 }

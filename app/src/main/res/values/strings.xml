@@ -14,4 +14,7 @@
     <string name="edit_habit">Редактировать привычку</string>
     <string name="no_habits">Нет привычек</string>
     <string name="add_first_habit">Добавьте свою первую привычку</string>
+    <string name="progress">Прогресс</string>
+    <string name="completed">Выполнено</string>
+    <string name="not_completed">Не выполнено</string>
 </resources>
