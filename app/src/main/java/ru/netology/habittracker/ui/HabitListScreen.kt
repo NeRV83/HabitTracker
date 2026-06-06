@@ -1,5 +1,6 @@
 package ru.netology.habittracker.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,12 +23,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ru.netology.habittracker.R
+import ru.netology.habittracker.data.Habit
 import ru.netology.habittracker.ui.components.HabitCard
 import ru.netology.habittracker.viewmodel.HabitListViewModel
 import ru.netology.habittracker.viewmodel.WeekDay
 import java.text.SimpleDateFormat
 import java.util.*
 
+@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun HabitListScreen(
     onAddHabit: () -> Unit,
@@ -44,11 +48,12 @@ fun HabitListScreen(
     val todayDate = remember { viewModel.getTodayDate() }
     val isTodaySelected = selectedDate == todayDate
 
-    // Форматируем отображение текущей недели без парсинга дат
+    var showUndoSnackbar by remember { mutableStateOf(false) }
+    var deletedHabit by remember { mutableStateOf<Habit?>(null) }
+
     val weekRange = remember(currentWeekStart) {
         val sdf = SimpleDateFormat("dd.MM", Locale.getDefault())
         try {
-            val calendar = Calendar.getInstance()
             val startDate = sdf.format(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(currentWeekStart) ?: Date())
             val endCalendar = Calendar.getInstance()
             endCalendar.time = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(currentWeekStart) ?: Date()
@@ -60,7 +65,30 @@ fun HabitListScreen(
         }
     }
 
+    val scaffoldState = rememberScaffoldState()
+
+    LaunchedEffect(showUndoSnackbar) {
+        if (showUndoSnackbar && deletedHabit != null) {
+            val result = scaffoldState.snackbarHostState.showSnackbar(
+                message = "Привычка \"${deletedHabit?.title}\" удалена",
+                actionLabel = "Отменить",
+                duration = SnackbarDuration.Short
+            )
+            when (result) {
+                SnackbarResult.ActionPerformed -> {
+                    deletedHabit?.let { viewModel.restoreHabit(it) }
+                }
+                SnackbarResult.Dismissed -> {
+                    // Удаление подтверждено
+                }
+            }
+            showUndoSnackbar = false
+            deletedHabit = null
+        }
+    }
+
     Scaffold(
+        scaffoldState = scaffoldState,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
@@ -84,7 +112,6 @@ fun HabitListScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Навигация по неделям
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -117,13 +144,11 @@ fun HabitListScreen(
                 }
             }
 
-            // Календарь недели
             WeekCalendar(
                 weekDays = currentWeekDays,
                 onDateSelected = { viewModel.updateSelectedDate(it) }
             )
 
-            // Информация о режиме
             if (!isTodaySelected) {
                 Card(
                     modifier = Modifier
@@ -174,27 +199,81 @@ fun HabitListScreen(
                             contentPadding = PaddingValues(vertical = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(habits) { habit ->
+                            items(
+                                items = habits,
+                                key = { it.id }
+                            ) { habit ->
                                 val isCompleted = viewModel.getCompletionStatus(habit.id, selectedDate)
                                 val progressPercent = viewModel.getProgressPercent(habit)
 
-                                HabitCard(
-                                    habit = habit,
-                                    priorityColor = viewModel.getPriorityColor(habit.priority),
-                                    isCompleted = isCompleted,
-                                    progressPercent = progressPercent,
-                                    isEditable = isTodaySelected,
-                                    onCardClick = { onViewHabit(habit.id) },
-                                    onEditClick = {
-                                        if (isTodaySelected) onEditHabit(habit.id)
-                                    },
-                                    onDeleteClick = {
-                                        if (isTodaySelected) viewModel.showDeleteConfirmation(habit)
-                                    },
-                                    onToggleCompletion = {
-                                        if (isTodaySelected) viewModel.toggleCompletion(habit, selectedDate)
+                                if (isTodaySelected) {
+                                    val dismissState = rememberDismissState()
+
+                                    SwipeToDismiss(
+                                        state = dismissState,
+                                        background = {
+                                            // Правильный способ получить направление свайпа
+                                            if (dismissState.targetValue == DismissValue.DismissedToEnd ||
+                                                dismissState.targetValue == DismissValue.DismissedToStart) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .background(Color.Red)
+                                                        .padding(16.dp),
+                                                    contentAlignment = Alignment.CenterEnd
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.Delete,
+                                                        contentDescription = "Удалить",
+                                                        tint = Color.White
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        directions = setOf(DismissDirection.EndToStart, DismissDirection.StartToEnd)
+                                    ) {
+                                        HabitCard(
+                                            habit = habit,
+                                            priorityColor = viewModel.getPriorityColor(habit.priority),
+                                            isCompleted = isCompleted,
+                                            progressPercent = progressPercent,
+                                            isEditable = isTodaySelected,
+                                            onCardClick = { onViewHabit(habit.id) },
+                                            onEditClick = { onEditHabit(habit.id) },
+                                            onDeleteClick = {
+                                                deletedHabit = habit
+                                                viewModel.deleteHabitWithUndo(habit)
+                                                showUndoSnackbar = true
+                                            },
+                                            onToggleCompletion = { viewModel.toggleCompletion(habit, selectedDate) }
+                                        )
                                     }
-                                )
+
+                                    LaunchedEffect(dismissState.currentValue) {
+                                        if (dismissState.currentValue == DismissValue.DismissedToEnd ||
+                                            dismissState.currentValue == DismissValue.DismissedToStart) {
+                                            deletedHabit = habit
+                                            viewModel.deleteHabitWithUndo(habit)
+                                            showUndoSnackbar = true
+                                        }
+                                    }
+                                } else {
+                                    HabitCard(
+                                        habit = habit,
+                                        priorityColor = viewModel.getPriorityColor(habit.priority),
+                                        isCompleted = isCompleted,
+                                        progressPercent = progressPercent,
+                                        isEditable = isTodaySelected,
+                                        onCardClick = { onViewHabit(habit.id) },
+                                        onEditClick = { onEditHabit(habit.id) },
+                                        onDeleteClick = {
+                                            deletedHabit = habit
+                                            viewModel.deleteHabitWithUndo(habit)
+                                            showUndoSnackbar = true
+                                        },
+                                        onToggleCompletion = { viewModel.toggleCompletion(habit, selectedDate) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -211,7 +290,12 @@ fun HabitListScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showDeleteConfirmation?.let { viewModel.deleteHabit(it) }
+                        showDeleteConfirmation?.let {
+                            deletedHabit = it
+                            viewModel.deleteHabitWithUndo(it)
+                            showUndoSnackbar = true
+                        }
+                        viewModel.hideDeleteConfirmation()
                     }
                 ) {
                     Text("Удалить")

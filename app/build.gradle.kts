@@ -117,6 +117,8 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.com.google.android.material)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.foundation.layout)
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

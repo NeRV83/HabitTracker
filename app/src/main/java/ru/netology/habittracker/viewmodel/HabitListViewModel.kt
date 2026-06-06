@@ -34,6 +34,9 @@ class HabitListViewModel : ViewModel() {
     private val _currentWeekDays = MutableStateFlow<List<WeekDay>>(emptyList())
     val currentWeekDays: StateFlow<List<WeekDay>> = _currentWeekDays.asStateFlow()
 
+    // Хранилище для отмены удаления
+    private var lastDeletedHabit: Habit? = null
+
     init {
         loadHabits()
         updateWeekDays()
@@ -53,6 +56,22 @@ class HabitListViewModel : ViewModel() {
         viewModelScope.launch {
             repository.deleteHabit(habit.id)
             _showDeleteConfirmation.value = null
+        }
+    }
+
+    // Удаление с возможностью отмены
+    fun deleteHabitWithUndo(habit: Habit) {
+        lastDeletedHabit = habit
+        viewModelScope.launch {
+            repository.deleteHabit(habit.id)
+        }
+    }
+
+    // Восстановление удаленной привычки
+    fun restoreHabit(habit: Habit) {
+        viewModelScope.launch {
+            repository.addHabit(habit)
+            lastDeletedHabit = null
         }
     }
 
